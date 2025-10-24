@@ -21,8 +21,8 @@ easyTrade consists of 19 microservices:
 - **Problem Patterns**: 4 configurable problem scenarios for demonstration
 
 ## EC2 Instance Requirements
-- **Minimum**: t3.large (2 vCPU, 8GB RAM) - due to 19 microservices
-- **Recommended**: t3.xlarge for stable performance
+- **Proven Working**: t3.large (2 vCPU, 8GB RAM) - successfully handles all 19 microservices
+- **Only upgrade to t3.xlarge if capacity issues occur**: memory pressure, CPU throttling, slow performance
 - **Storage**: 30GB minimum (50GB recommended)
 - **OS**: Amazon Linux 2 or Ubuntu 20.04/22.04
 - **Ports**: 22 (SSH), 80 (main application)
