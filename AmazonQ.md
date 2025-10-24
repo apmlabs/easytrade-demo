@@ -1,23 +1,38 @@
 # Amazon Q Context - easyTrade Demo Status
 
-## Current Deployment Status: STOPPED 🛑
+## Current Deployment Status: ACTIVE ✅
 
-**Last Updated**: October 24, 2025 23:22 UTC
+**Last Updated**: October 24, 2025 23:39 UTC
 
-## Stopped Infrastructure
-- **EC2 Instance**: i-0b9a5f06e7c7268dd (t3.large, us-east-2) - STOPPED
-- **Key Pair**: easytrade-key (preserved)
-- **Security Group**: sg-0decf9989aba71016 (preserved)
+## Active Infrastructure
+- **EC2 Instance**: i-0b9a5f06e7c7268dd (t3.large, us-east-2)
+- **Public IP**: 3.140.198.157
+- **Key Pair**: easytrade-key
+- **Security Group**: sg-0decf9989aba71016 (ports 22, 80)
 
 ## Application Status
-🛑 **easyTrade Demo STOPPED** (all configuration preserved)
-- Instance stopped to save costs
-- All 19 services configuration intact
-- Ready for quick restart (5-10 minutes for full startup)
-- Autostart service will restore all containers on restart
-- OneAgent will automatically restart and reconnect
+✅ **easyTrade Demo FULLY DEPLOYED and RUNNING**
+- All 19 microservices operational
+- Dynatrace OneAgent installed and monitoring
+- Autostart service configured for persistence
+- Application accessible at http://3.140.198.157:80
+
+## Quick Access
+- **Main Application**: http://3.140.198.157:80
+- **Default Users**: demouser/demopass, specialuser/specialpass, james_norton/pass_james_123
 
 ## Key Context for Conversations
+- **DO NOT create new infrastructure** - demo is already running
+- **Current deployment is production-ready** with monitoring and autostart
+- **Instance will auto-restart** all 19 services after reboot
+- **OneAgent properly installed** before containers for full monitoring
+
+## Available Actions
+- Check application status
+- Access demo URLs
+- Test problem patterns
+- **Shutdown instance** (preserves all config for later restart)
+- **Terminate completely** (permanent cleanup)
 - **DO NOT create new infrastructure** - existing instance just needs restart
 - **All configuration preserved** - no redeployment needed
 - **Quick restart available** - just start the existing instance
