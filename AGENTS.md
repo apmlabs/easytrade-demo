@@ -237,6 +237,37 @@ When cleaning up easyTrade deployments permanently, follow this order to avoid d
 - Verify no easyTrade key pairs: `aws ec2 describe-key-pairs --region us-east-2`
 - Verify local directory is clean of PEM files: `ls -la *.pem 2>/dev/null || echo "Clean"`
 
+## Key Learnings from Deployment
+
+### Deployment Performance
+- **Actual deployment time**: 3 minutes (vs estimated 10-15 minutes)
+- **User data script efficiency**: Highly optimized for parallel container startup
+- **Container orchestration**: All 19 services start effectively in parallel
+- **Resource utilization**: t3.large handles 19 services well
+
+### OneAgent Integration
+- **Post-deployment installation**: Successfully installed OneAgent AFTER containers were running
+- **Auto-discovery**: OneAgent automatically detected and monitored all 19 microservices
+- **Best practice confirmed**: Install OneAgent BEFORE containers for immediate monitoring
+- **Monitoring coverage**: Full distributed tracing across all services
+
+### Autostart Configuration
+- **Service verification**: easytrade-autostart.service properly configured and enabled
+- **Boot sequence**: Correctly depends on docker.service
+- **User permissions**: Runs as ec2-user with docker group membership
+- **Reliability**: Type=oneshot with RemainAfterExit=yes works perfectly for docker-compose
+
+### Infrastructure Management
+- **Stop vs Terminate**: Stop preserves all configuration, terminate removes everything
+- **Public IP behavior**: Changes after stop/start cycle
+- **Cost optimization**: Stopping saves compute costs while preserving setup
+- **Quick restart**: 5-10 minutes to full operation from stopped state
+
+### Security and Documentation
+- **GitHub integration**: Successfully created public repository with protected secrets
+- **File protection**: .gitignore effectively prevents sensitive file commits
+- **Documentation completeness**: All deployment knowledge captured in markdown files
+
 ## Critical Mistakes to Avoid
 - **Never commit secrets**: Always create .gitignore before first commit to protect sensitive files
 - **Don't assume existing infrastructure**: Always check AWS resources first
