@@ -1,39 +1,42 @@
 # Amazon Q Context - easyTrade Demo Status
 
-## Current Deployment Status: ACTIVE ✅
+## Current Deployment Status: STOPPED 🛑
 
-**Last Updated**: October 24, 2025 23:10 UTC
+**Last Updated**: October 24, 2025 23:22 UTC
 
-## Active Infrastructure
-- **EC2 Instance**: i-0b9a5f06e7c7268dd (t3.large, us-east-2)
-- **Public IP**: 3.16.217.113
-- **Key Pair**: easytrade-key
-- **Security Group**: sg-0decf9989aba71016 (ports 22, 80)
+## Stopped Infrastructure
+- **EC2 Instance**: i-0b9a5f06e7c7268dd (t3.large, us-east-2) - STOPPED
+- **Key Pair**: easytrade-key (preserved)
+- **Security Group**: sg-0decf9989aba71016 (preserved)
 
 ## Application Status
-✅ **easyTrade Demo FULLY DEPLOYED and RUNNING**
-- All 19 microservices operational
-- Dynatrace OneAgent installed and monitoring
-- Autostart service configured for persistence
-- Application accessible at http://3.16.217.113:80
-- **Deployment time**: ~3 minutes (faster than expected)
-
-## Quick Access
-- **Main Application**: http://3.16.217.113:80
-- **Default Users**: demouser/demopass, specialuser/specialpass, james_norton/pass_james_123
+🛑 **easyTrade Demo STOPPED** (all configuration preserved)
+- Instance stopped to save costs
+- All 19 services configuration intact
+- Ready for quick restart (5-10 minutes for full startup)
+- Autostart service will restore all containers on restart
+- OneAgent will automatically restart and reconnect
 
 ## Key Context for Conversations
-- **DO NOT create new infrastructure** - demo is already running
-- **Current deployment is production-ready** with monitoring and autostart
-- **Instance will auto-restart** all 19 services after reboot
-- **Fast deployment proven** - user data script works efficiently
+- **DO NOT create new infrastructure** - existing instance just needs restart
+- **All configuration preserved** - no redeployment needed
+- **Quick restart available** - just start the existing instance
+- **Public IP will change** after restart (get new IP from AWS)
+- **Autostart verified working** - all services will auto-launch
 
 ## Available Actions
-- Check application status
-- Access demo URLs
-- Test problem patterns
-- **Shutdown instance** (preserves all config for later restart)
+- **Restart existing instance** (fastest option)
+- Check instance status
 - **Terminate completely** (permanent cleanup)
+
+## Restart Commands
+```bash
+# Start the stopped instance
+aws ec2 start-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
+
+# Get new public IP after restart
+aws ec2 describe-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd --query "Reservations[].Instances[].[InstanceId,PublicIpAddress,State.Name]" --output table
+```
 
 ## Key Differences from easyTravel
 - **Scale**: 19 services vs 6-8 services in easyTravel
