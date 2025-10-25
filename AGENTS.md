@@ -118,6 +118,7 @@ Enable via API or frontend interface.
 ## GitHub Repository Management
 - **GitHub Setup**: Follow GITHUB.md in this folder for repository setup instructions
 - **When asked about GitHub repositories**: Reference the GITHUB.md file in this project folder
+- **Critical**: Always check .gitignore before committing - AmazonQ.md should NEVER be committed
 
 ## Rules
 - Always update AGENTS.md when discovering new deployment insights
@@ -128,6 +129,7 @@ Enable via API or frontend interface.
 - **Default Infrastructure Behavior**: Check AmazonQ.md first - only create new infrastructure if none exists
 - **Default Region**: Use us-east-2 unless otherwise specified
 - **Status Reporting**: Current deployment status is always available in AmazonQ.md context
+- **CRITICAL: ALWAYS UPDATE STATUS FILES** - After ANY infrastructure change (start/stop/terminate/create), immediately update the easytrade-demo status documentation (AmazonQ.md) to reflect current state. Failure to update status files causes context loss and repeated mistakes across chat sessions.
 
 ## GitHub Repository Setup
 
