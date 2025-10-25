@@ -80,6 +80,13 @@ sudo apt install docker-compose-plugin
   4. Verify: `sudo systemctl status oneagent`
 - **Auto-discovery**: OneAgent automatically discovers and monitors all 19 microservices
 
+### OneAgent Control Commands
+- **Status check**: `sudo systemctl status oneagent`
+- **Version**: `sudo /opt/dynatrace/oneagent/agent/tools/oneagentctl --version`
+- **Server connection**: `sudo /opt/dynatrace/oneagent/agent/tools/oneagentctl --get-server`
+- **Help**: `sudo /opt/dynatrace/oneagent/agent/tools/oneagentctl --help`
+- **Container monitoring**: Look for `oneagenthelper --containerd` processes in status output
+
 ## Security Group Configuration
 - Port 22: SSH access (restrict to your IP)
 - Port 80: Main application (0.0.0.0/0 or restricted)
@@ -107,6 +114,10 @@ Enable via API or frontend interface.
 - Explore business event capture and analysis
 - Gain experience with problem pattern simulation
 - Study service mesh communication patterns
+
+## GitHub Repository Management
+- **GitHub Setup**: Follow GITHUB.md in this folder for repository setup instructions
+- **When asked about GitHub repositories**: Reference the GITHUB.md file in this project folder
 
 ## Rules
 - Always update AGENTS.md when discovering new deployment insights
