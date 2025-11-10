@@ -98,6 +98,54 @@ sudo apt install docker-compose-plugin
   - `specialuser/specialpass`
   - `james_norton/pass_james_123` (has pre-populated data)
 
+## 🚨 Problem Patterns Available (All Currently Disabled)
+
+| Pattern | ID | Status | Effect |
+|---------|----|---------| -------|
+| DB Not Responding | `db_not_responding` | ❌ OFF | Blocks new trades |
+| Aggregator Slowdown | `ergo_aggregator_slowdown` | ❌ OFF | Service delays |
+| Factory Crisis | `factory_crisis` | ❌ OFF | Credit card processing blocked |
+| High CPU Usage | `high_cpu_usage` | ❌ OFF | Performance degradation |
+| Credit Card Meltdown | `credit_card_meltdown` | ❌ OFF | Frontend errors |
+
+### Enable Problem Patterns:
+```bash
+curl -X PUT "http://18.224.57.90/feature-flag-service/v1/flags/{PATTERN_ID}/" \
+-H "accept: application/json" \
+-d '{"enabled": true}'
+```
+
+## 🎯 Load Generation Active
+- **5 concurrent workers** running realistic scenarios
+- **Traffic patterns**: order_credit_card, deposit_and_buy_success, etc.
+- **Synthetic users**: Realistic profiles with IP addresses
+- **Browser simulation**: Headless browsers for authentic interactions
+
+## 👥 Default Users
+- demouser/demopass
+- specialuser/specialpass
+- james_norton/pass_james_123 (has pre-populated trading data)
+
+## 🔧 Management Commands
+
+### Check Status:
+```bash
+# All containers
+ssh -i easytrade-key.pem ec2-user@18.224.57.90 "cd easytrade && docker compose ps"
+
+# Feature flags
+curl http://18.224.57.90/feature-flag-service/v1/flags
+```
+
+### Infrastructure Control:
+```bash
+# Stop instance (preserve config)
+aws ec2 stop-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
+
+# Start instance (get new IP)
+aws ec2 start-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
+```
+
 ## Problem Patterns
 easyTrade includes 4 built-in problem patterns for demonstration:
 1. **DbNotResponding**: Database errors preventing new trades
@@ -255,14 +303,35 @@ When cleaning up easyTrade deployments permanently, follow this order to avoid d
 ### Deployment Performance
 - **Actual deployment time**: 3 minutes (vs estimated 10-15 minutes)
 - **User data script efficiency**: Highly optimized for parallel container startup
-- **Container orchestration**: All 19 services start effectively in parallel
-- **Resource utilization**: t3.large handles 19 services well
+- **Container orchestration**: All 18 services start effectively in parallel
+- **Resource utilization**: t3.large handles 18 services well
+- **Restart performance**: Instance restart takes ~1 minute, full service stabilization ~3-5 minutes
+
+### Service Architecture
+- **Total services**: 18 microservices (not 19 as initially documented)
+- **Load generator**: Built-in with 5 concurrent workers generating realistic traffic patterns
+- **Problem patterns**: 5 available patterns (including credit_card_meltdown not in original docs)
+- **Feature flag service**: Runs on internal port 8080, accessible via `/feature-flag-service/v1/flags`
 
 ### OneAgent Integration
 - **Post-deployment installation**: Successfully installed OneAgent AFTER containers were running
-- **Auto-discovery**: OneAgent automatically detected and monitored all 19 microservices
+- **Auto-discovery**: OneAgent automatically detected and monitored all 18 microservices
 - **Best practice confirmed**: Install OneAgent BEFORE containers for immediate monitoring
 - **Monitoring coverage**: Full distributed tracing across all services
+- **Container monitoring**: 17+ oneagenthelper processes actively monitoring containers
+
+### Problem Pattern Management
+- **API endpoint**: `http://IP/feature-flag-service/v1/flags` (requires service prefix)
+- **Pattern IDs**: Use underscores not camelCase (`db_not_responding` not `DbNotResponding`)
+- **Available patterns**: db_not_responding, ergo_aggregator_slowdown, factory_crisis, high_cpu_usage, credit_card_meltdown
+- **Frontend control**: Enabled via `frontend_feature_flag_management` flag
+- **Service stabilization**: Wait 3-5 minutes after restart before API calls work properly
+
+### Load Generation
+- **Built-in traffic**: 5 workers with realistic user scenarios
+- **Traffic patterns**: order_credit_card, deposit_and_buy_success, deposit_and_long_buy_error, etc.
+- **Synthetic users**: Generates realistic profiles with IP addresses
+- **Browser simulation**: Uses headless browsers for authentic interactions
 
 ### Autostart Configuration
 - **Service verification**: easytrade-autostart.service properly configured and enabled
@@ -272,9 +341,16 @@ When cleaning up easyTrade deployments permanently, follow this order to avoid d
 
 ### Infrastructure Management
 - **Stop vs Terminate**: Stop preserves all configuration, terminate removes everything
-- **Public IP behavior**: Changes after stop/start cycle
+- **Public IP behavior**: Changes after stop/start cycle (AWS assigns new IP each time)
 - **Cost optimization**: Stopping saves compute costs while preserving setup
-- **Quick restart**: 5-10 minutes to full operation from stopped state
+- **Quick restart**: 3-5 minutes to full operation from stopped state
+- **Service count**: Always verify actual running containers vs documentation
+
+### Troubleshooting
+- **Service routing**: All services accessible via reverse proxy with service prefix
+- **API timing**: Feature flag service needs stabilization time after container start
+- **Container logs**: Use `docker compose logs service-name` for debugging
+- **Network connectivity**: Test internal service connectivity before external API calls
 
 ### Security and Documentation
 - **GitHub integration**: Successfully created public repository with protected secrets
@@ -283,6 +359,8 @@ When cleaning up easyTrade deployments permanently, follow this order to avoid d
 
 ## Critical Mistakes to Avoid
 - **Never commit secrets**: Always create .gitignore before first commit to protect sensitive files
+- **AmazonQ.md is ALWAYS in .gitignore**: Contains sensitive deployment info and should never be tracked
+- **If AmazonQ.md was previously tracked**: Use `git rm --cached AmazonQ.md` to remove from tracking
 - **Don't assume existing infrastructure**: Always check AWS resources first
 - **Don't use hardcoded resource IDs**: Security groups, subnets vary by account/region
 - **Don't skip Docker group membership**: User must be in docker group to run containers
