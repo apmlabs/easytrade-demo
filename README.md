@@ -183,6 +183,54 @@ easyTrade consists of 19 microservices:
 | Load Generator | Traffic generation | Internal |
 | And 5 more services... | Various functions | Internal |
 
+## 🚨 Problem Patterns Available (All Currently Disabled)
+
+| Pattern | ID | Status | Effect |
+|---------|----|---------| -------|
+| DB Not Responding | `db_not_responding` | ❌ OFF | Blocks new trades |
+| Aggregator Slowdown | `ergo_aggregator_slowdown` | ❌ OFF | Service delays |
+| Factory Crisis | `factory_crisis` | ❌ OFF | Credit card processing blocked |
+| High CPU Usage | `high_cpu_usage` | ❌ OFF | Performance degradation |
+| Credit Card Meltdown | `credit_card_meltdown` | ❌ OFF | Frontend errors |
+
+### Enable Problem Patterns:
+```bash
+curl -X PUT "http://YOUR_EC2_PUBLIC_IP/feature-flag-service/v1/flags/{PATTERN_ID}/" \
+-H "accept: application/json" \
+-d '{"enabled": true}'
+```
+
+## 🎯 Load Generation Active
+- **5 concurrent workers** running realistic scenarios
+- **Traffic patterns**: order_credit_card, deposit_and_buy_success, etc.
+- **Synthetic users**: Realistic profiles with IP addresses
+- **Browser simulation**: Headless browsers for authentic interactions
+
+## 👥 Default Users
+- demouser/demopass
+- specialuser/specialpass
+- james_norton/pass_james_123 (has pre-populated trading data)
+
+## 🔧 Management Commands
+
+### Check Status:
+```bash
+# All containers
+ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP "cd easytrade && docker compose ps"
+
+# Feature flags
+curl http://YOUR_EC2_PUBLIC_IP/feature-flag-service/v1/flags
+```
+
+### Infrastructure Control:
+```bash
+# Stop instance (preserve config)
+aws ec2 stop-instances --region us-east-2 --instance-ids YOUR_INSTANCE_ID
+
+# Start instance (get new IP)
+aws ec2 start-instances --region us-east-2 --instance-ids YOUR_INSTANCE_ID
+```
+
 ## Problem Patterns
 
 easyTrade includes 4 built-in problem patterns for demonstration:
