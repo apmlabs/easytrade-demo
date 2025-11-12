@@ -1,5 +1,6 @@
 # Sensitive files
-secrets.yaml
+secrets*.yaml
+dynakube*.yaml
 *.pem
 *.key
 

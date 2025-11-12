@@ -23,11 +23,13 @@ easyTrade consists of 19 microservices:
 - **Problem Patterns**: 4 configurable problem scenarios for demonstration
 
 ## EC2 Instance Requirements
-- **Proven Working**: t3.large (2 vCPU, 8GB RAM) - successfully handles all 19 microservices
-- **Only upgrade to t3.xlarge if capacity issues occur**: memory pressure, CPU throttling, slow performance
-- **Storage**: 30GB minimum (50GB recommended)
-- **OS**: Amazon Linux 2 or Ubuntu 20.04/22.04
-- **Ports**: 22 (SSH), 80 (main application), 6443 (k3s API server)
+- **CRITICAL SUCCESS**: m5.xlarge (4 vCPU, 16GB RAM) - PERFECT for all 19 microservices in k3s
+- **FAILED**: t3.large (8GB RAM) is INSUFFICIENT - causes 3 critical services to fail (rabbitmq, manager, third-party-service)
+- **Memory Usage**: k3s deployment uses ~97% of 8GB RAM, but only ~50% of 16GB RAM
+- **Cost-Effective**: m5.xlarge provides sustained performance without CPU credits limitation
+- **Storage**: 50GB recommended for container images and logs
+- **OS**: Ubuntu 22.04 (works perfectly with k3s)
+- **Ports**: 22 (SSH), 80, 6443 (k3s API server), PLUS NodePort range (30000-32767)
 
 ## Kubernetes (k3s) Deployment Strategy
 - **k3s**: Lightweight Kubernetes distribution perfect for single-node deployments
@@ -37,11 +39,11 @@ easyTrade consists of 19 microservices:
 - **Resource Management**: Proper resource requests/limits defined for all services
 - **Service Mesh**: Native Kubernetes service discovery and networking
 
-## Installation Process (CRITICAL: OneAgent FIRST)
+## Installation Process (CRITICAL: Dynatrace Operator)
 1. **EC2 Setup**: Launch instance with proper security group (ports 22, 80, 6443)
 2. **k3s Installation**: Install k3s single-node cluster
 3. **Git Installation**: Install git (required for Amazon Linux 2)
-4. **Dynatrace OneAgent**: **CRITICAL - INSTALL FIRST** - Use credentials from secrets.yaml
+4. **Dynatrace Operator**: Install Dynatrace operator for Kubernetes monitoring
 5. **Repository Clone**: Clone easyTrade repository
 6. **Kubernetes Deployment**: Apply manifests using kubectl/kustomize
 7. **Verification**: Check pod status and application accessibility
@@ -52,9 +54,9 @@ easyTrade consists of 19 microservices:
 - All 19 services start with proper orchestration
 - Built-in health checks and readiness probes
 
-**CRITICAL INSTALLATION ORDER**: OneAgent MUST be installed BEFORE pods start
-- OneAgent auto-discovers and monitors all 19 microservices
-- Installing after pods requires pod restart for full monitoring
+**DYNATRACE OPERATOR INSTALLATION**: Install after k3s cluster is ready
+- Dynatrace operator auto-discovers and monitors all 19 microservices
+- Installing after pods provides full monitoring coverage
 - k3s provides better observability integration than Docker Compose
 
 ## k3s Requirements
@@ -77,22 +79,43 @@ export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 - **ConfigMaps**: Connection strings and environment variables
 - **Problem Operator**: Kubernetes-native problem pattern management
 
-## Dynatrace OneAgent Installation
-- **Credentials**: Stored in secrets.yaml (environment URL and API token)
-- **Installation Order**: MUST be installed BEFORE easyTrade containers
-- **Process**:
-  1. Download installer: `wget -O Dynatrace-OneAgent-Linux-x86-*.sh "{url}/api/v1/deployment/installer/agent/unix/default/latest?arch=x86" --header="Authorization: Api-Token {token}"`
-  2. Make executable: `chmod +x Dynatrace-OneAgent-Linux-x86-*.sh`
-  3. Install: `sudo ./Dynatrace-OneAgent-Linux-x86-*.sh`
-  4. Verify: `sudo systemctl status oneagent`
-- **Auto-discovery**: OneAgent automatically discovers and monitors all 19 microservices
+## Dynatrace Operator Installation
 
-### OneAgent Control Commands
-- **Status check**: `sudo systemctl status oneagent`
-- **Version**: `sudo /opt/dynatrace/oneagent/agent/tools/oneagentctl --version`
-- **Server connection**: `sudo /opt/dynatrace/oneagent/agent/tools/oneagentctl --get-server`
-- **Help**: `sudo /opt/dynatrace/oneagent/agent/tools/oneagentctl --help`
-- **Container monitoring**: Look for `oneagenthelper --containerd` processes in status output
+### Prerequisites
+- k3s cluster running and accessible
+- kubectl configured with KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
+### Installation Steps
+```bash
+# 1. Create Dynatrace namespace
+kubectl create namespace dynatrace
+
+# 2. Install Dynatrace operator
+kubectl apply -f https://github.com/Dynatrace/dynatrace-operator/releases/latest/download/kubernetes.yaml
+
+# 3. Apply secrets (API tokens)
+kubectl apply -f secrets-easytrade.yaml
+
+# 4. Apply DynaKube configuration
+kubectl apply -f dynakube-easytrade.yaml
+
+# 5. Verify installation
+kubectl get pods -n dynatrace
+kubectl get dynakube -n dynatrace
+```
+
+### Configuration Files
+- **secrets-easytrade.yaml**: Contains API token and data ingest token
+- **dynakube-easytrade.yaml**: DynaKube configuration for easyTrade monitoring
+- **Tenant URL**: https://cyu0810h.sprint.dynatracelabs.com
+- **Same tokens as astroshop-demo**: Reuses existing API keys for consistency
+
+### Monitoring Coverage
+- **All 19 microservices**: Automatic discovery and monitoring
+- **Kubernetes metadata**: Pod, service, and deployment enrichment
+- **Distributed tracing**: Full trace coverage across services
+- **Log monitoring**: Container log collection and analysis
+- **ActiveGate**: Kubernetes monitoring and routing capabilities
 
 ## Security Group Configuration
 - Port 22: SSH access (restrict to your IP)
@@ -315,15 +338,22 @@ When cleaning up easyTrade deployments permanently, follow this order to avoid d
 - **k3s cluster startup**: ~2 minutes for single-node cluster initialization
 - **Pod deployment time**: 5-7 minutes for all 19 microservices
 - **Container orchestration**: Kubernetes handles dependencies and startup order
-- **Resource utilization**: t3.large handles 19 services with proper resource limits
+- **Resource utilization**: m5.xlarge handles all 19 services perfectly with room to spare
 - **Restart performance**: k3s cluster restart takes ~2-3 minutes, full pod stabilization ~5-7 minutes
 
 ### Service Architecture
 - **Total services**: 19 microservices with Kubernetes-native networking
 - **Load generator**: Built-in with 5 concurrent workers generating realistic traffic patterns
 - **Problem patterns**: 5 available patterns managed via Kubernetes problem operator
-- **Feature flag service**: Accessible via LoadBalancer service on port 80
+- **Feature flag service**: Accessible via LoadBalancer service on NodePort
 - **Service discovery**: Native Kubernetes DNS for inter-service communication
+
+### Critical Success Factors
+- **m5.xlarge is ESSENTIAL**: 16GB RAM required for all 19 services
+- **Ubuntu 22.04**: Works better than Amazon Linux 2 for k3s
+- **Image registry configuration**: Must be done from start with correct Dynatrace registry
+- **NodePort security groups**: Always open the assigned NodePort for public access
+- **k3s LoadBalancer**: Works via NodePort, external IP stays pending (normal behavior)
 
 ### OneAgent Integration
 - **Pre-deployment installation**: Install OneAgent BEFORE applying Kubernetes manifests
@@ -540,6 +570,8 @@ The easyTrade Kubernetes manifests include:
 - **Don't forget KUBECONFIG**: Export KUBECONFIG=/etc/rancher/k3s/k3s.yaml for kubectl access
 - **Don't use docker-compose commands**: This is k3s deployment, use kubectl commands
 - **Always verify LoadBalancer**: Use `kubectl get services` to confirm external IP assignment
-- **Always terminate instances first** to avoid charges
-- **Remove PEM files immediately** after deleting key pairs to prevent confusion
-- **Allow pod stabilization time**: easyTrade takes 5-7 minutes to fully start all 19 services in k3s
+- **CRITICAL: ALWAYS UPDATE STATUS FILES** - After ANY infrastructure change (start/stop/terminate/create), immediately update the easytrade-demo status documentation (AmazonQ.md) to reflect current state. Failure to update status files causes context loss and repeated mistakes across chat sessions.
+- **MEMORY CRITICAL**: t3.large insufficient for 19 services - causes rabbitmq, manager, third-party-service to fail
+- **NodePort Security Groups**: Always open the NodePort in security group for public access
+- **Resource Constraints Break Functionality**: Missing critical services (rabbitmq, manager) cause application to load but not work properly
+- **SUCCESS FORMULA**: m5.xlarge + Ubuntu 22.04 + proper image registry + NodePort security group = PERFECT deployment
