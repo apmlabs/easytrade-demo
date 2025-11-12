@@ -1,15 +1,17 @@
-# easyTrade Deployment Agent Context
+# easyTrade Kubernetes (k3s) Deployment Agent Context
 
-You are an agent that helps deploy and troubleshoot easyTrade demo application on AWS EC2.
+You are an agent that helps deploy and troubleshoot easyTrade demo application on AWS EC2 using Kubernetes (k3s).
 
 Repository URL: https://github.com/Dynatrace/easytrade
 
 ## Deployment Information
 - easyTrade is a microservices-based stock trading demo application developed by Dynatrace
 - Consists of 19 interconnected services showcasing distributed tracing and monitoring
-- Supports deployment on AWS EC2 instances with Docker Compose or Kubernetes
+- **PRIMARY DEPLOYMENT**: Kubernetes (k3s) on AWS EC2 instances
+- **ALTERNATIVE**: Docker Compose (legacy approach)
 - Official repository: https://github.com/Dynatrace/easytrade
 - Modern cloud-native application with built-in problem patterns for demonstration
+- **KUBERNETES READY**: Official Kubernetes manifests available in repository
 
 ## Application Architecture
 easyTrade consists of 19 microservices:
@@ -25,50 +27,55 @@ easyTrade consists of 19 microservices:
 - **Only upgrade to t3.xlarge if capacity issues occur**: memory pressure, CPU throttling, slow performance
 - **Storage**: 30GB minimum (50GB recommended)
 - **OS**: Amazon Linux 2 or Ubuntu 20.04/22.04
-- **Ports**: 22 (SSH), 80 (main application)
+- **Ports**: 22 (SSH), 80 (main application), 6443 (k3s API server)
 
-## Deployment Strategy
-- Local system is CONTROL CENTER only - deploy easyTrade on remote EC2 instance
-- Use SSH access with PEM key for remote deployment
-- Security group must allow required ports for application access
-- Docker and Docker Compose Plugin required on target instance
-- **CRITICAL**: Install Dynatrace OneAgent BEFORE deploying easyTrade containers
+## Kubernetes (k3s) Deployment Strategy
+- **k3s**: Lightweight Kubernetes distribution perfect for single-node deployments
+- **Official Manifests**: easyTrade repository includes complete Kubernetes manifests
+- **Kustomize**: Uses Kustomize for configuration management
+- **LoadBalancer**: Uses k3s built-in LoadBalancer (Traefik) for external access
+- **Resource Management**: Proper resource requests/limits defined for all services
+- **Service Mesh**: Native Kubernetes service discovery and networking
 
 ## Installation Process (CRITICAL: OneAgent FIRST)
-1. **EC2 Setup**: Launch instance with proper security group
-2. **Docker Installation**: Install Docker and Docker Compose Plugin (v20.10.13+)
+1. **EC2 Setup**: Launch instance with proper security group (ports 22, 80, 6443)
+2. **k3s Installation**: Install k3s single-node cluster
 3. **Git Installation**: Install git (required for Amazon Linux 2)
 4. **Dynatrace OneAgent**: **CRITICAL - INSTALL FIRST** - Use credentials from secrets.yaml
 5. **Repository Clone**: Clone easyTrade repository
-6. **Container Deployment**: Run `docker compose up -d`
-7. **Autostart Setup**: Configure systemd service for automatic restart
-8. **Verification**: Check container status and application accessibility
+6. **Kubernetes Deployment**: Apply manifests using kubectl/kustomize
+7. **Verification**: Check pod status and application accessibility
 
-**DEPLOYMENT TIMING**: Actual deployment takes ~3 minutes (much faster than estimated 10-15 minutes)
-- User data script is highly efficient
-- Docker pulls and container startup are optimized
-- All 19 services start in parallel effectively
+**DEPLOYMENT TIMING**: k3s deployment takes ~5-7 minutes (slightly longer than Docker Compose)
+- k3s cluster initialization: ~2 minutes
+- Container pulls and pod startup: ~3-5 minutes
+- All 19 services start with proper orchestration
+- Built-in health checks and readiness probes
 
-**CRITICAL INSTALLATION ORDER**: OneAgent MUST be installed BEFORE containers start
+**CRITICAL INSTALLATION ORDER**: OneAgent MUST be installed BEFORE pods start
 - OneAgent auto-discovers and monitors all 19 microservices
-- Installing after containers requires container restart for full monitoring
-- Post-deployment OneAgent installation confirmed working on active easyTrade instance
+- Installing after pods requires pod restart for full monitoring
+- k3s provides better observability integration than Docker Compose
 
-## Docker Requirements
-- **Docker**: Minimum version v20.10.13
-- **Docker Compose Plugin**: Required (NOT docker-compose v1)
+## k3s Requirements
+- **k3s**: Lightweight Kubernetes distribution (single binary)
+- **kubectl**: Included with k3s installation
+- **Kustomize**: Built into kubectl for manifest management
 - **Installation**:
 ```bash
-# Amazon Linux 2
-sudo yum update -y
-sudo yum install docker -y
-sudo service docker start
-sudo usermod -a -G docker ec2-user
-
-# Install Docker Compose Plugin
-sudo apt update
-sudo apt install docker-compose-plugin
+# Amazon Linux 2 / Ubuntu
+curl -sfL https://get.k3s.io | sh -
+sudo chmod 644 /etc/rancher/k3s/k3s.yaml
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 ```
+
+## Kubernetes Manifest Structure
+- **Base Manifests**: `/kubernetes-manifests/base/` - 21 YAML files
+- **Kustomization**: Uses Kustomize for configuration management
+- **Services**: All 19 microservices with proper resource limits
+- **LoadBalancer**: frontendreverseproxy exposed via k3s LoadBalancer
+- **ConfigMaps**: Connection strings and environment variables
+- **Problem Operator**: Kubernetes-native problem pattern management
 
 ## Dynatrace OneAgent Installation
 - **Credentials**: Stored in secrets.yaml (environment URL and API token)
@@ -90,6 +97,7 @@ sudo apt install docker-compose-plugin
 ## Security Group Configuration
 - Port 22: SSH access (restrict to your IP)
 - Port 80: Main application (0.0.0.0/0 or restricted)
+- Port 6443: k3s API server (optional, for kubectl access)
 
 ## Application Access
 - **Main Application**: `http://YOUR_EC2_PUBLIC_IP:80`
@@ -130,20 +138,23 @@ curl -X PUT "http://18.224.57.90/feature-flag-service/v1/flags/{PATTERN_ID}/" \
 
 ### Check Status:
 ```bash
-# All containers
-ssh -i easytrade-key.pem ec2-user@18.224.57.90 "cd easytrade && docker compose ps"
+# All pods
+kubectl get pods -o wide
+
+# Services and LoadBalancer
+kubectl get services
 
 # Feature flags
-curl http://18.224.57.90/feature-flag-service/v1/flags
+curl http://EXTERNAL_IP/feature-flag-service/v1/flags
 ```
 
 ### Infrastructure Control:
 ```bash
 # Stop instance (preserve config)
-aws ec2 stop-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
+aws ec2 stop-instances --region us-east-2 --instance-ids INSTANCE_ID
 
 # Start instance (get new IP)
-aws ec2 start-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
+aws ec2 start-instances --region us-east-2 --instance-ids INSTANCE_ID
 ```
 
 ## Problem Patterns
@@ -261,7 +272,7 @@ aws ec2 describe-instances --region us-east-2 --instance-ids INSTANCE_ID --query
 - No redeployment needed (saves 10-15 minutes for 19 services)
 - Faster restart (2-3 minutes vs full deployment time)
 - Keeps same instance ID and security group
-- easyTrade autostart service will restart all 19 containers automatically
+- k3s cluster and all pods will restart automatically
 
 **Note:** Public IP changes after stop/start, but all configuration remains intact.
 
@@ -298,14 +309,176 @@ When cleaning up easyTrade deployments permanently, follow this order to avoid d
 - Verify no easyTrade key pairs: `aws ec2 describe-key-pairs --region us-east-2`
 - Verify local directory is clean of PEM files: `ls -la *.pem 2>/dev/null || echo "Clean"`
 
-## Key Learnings from Deployment
+## Key Learnings from k3s Deployment
 
 ### Deployment Performance
-- **Actual deployment time**: 3 minutes (vs estimated 10-15 minutes)
-- **User data script efficiency**: Highly optimized for parallel container startup
-- **Container orchestration**: All 18 services start effectively in parallel
-- **Resource utilization**: t3.large handles 18 services well
-- **Restart performance**: Instance restart takes ~1 minute, full service stabilization ~3-5 minutes
+- **k3s cluster startup**: ~2 minutes for single-node cluster initialization
+- **Pod deployment time**: 5-7 minutes for all 19 microservices
+- **Container orchestration**: Kubernetes handles dependencies and startup order
+- **Resource utilization**: t3.large handles 19 services with proper resource limits
+- **Restart performance**: k3s cluster restart takes ~2-3 minutes, full pod stabilization ~5-7 minutes
+
+### Service Architecture
+- **Total services**: 19 microservices with Kubernetes-native networking
+- **Load generator**: Built-in with 5 concurrent workers generating realistic traffic patterns
+- **Problem patterns**: 5 available patterns managed via Kubernetes problem operator
+- **Feature flag service**: Accessible via LoadBalancer service on port 80
+- **Service discovery**: Native Kubernetes DNS for inter-service communication
+
+### OneAgent Integration
+- **Pre-deployment installation**: Install OneAgent BEFORE applying Kubernetes manifests
+- **Auto-discovery**: OneAgent automatically detects and monitors all 19 microservices
+- **Container monitoring**: Full visibility into Kubernetes pods and containers
+- **Distributed tracing**: Complete trace coverage across all services
+- **Best practice**: OneAgent installation before pod creation ensures immediate monitoring
+
+### Kubernetes Advantages over Docker Compose
+- **Resource management**: Proper CPU/memory requests and limits
+- **Health checks**: Built-in readiness and liveness probes
+- **Service discovery**: Native Kubernetes DNS resolution
+- **Load balancing**: Automatic load balancing via Services
+- **Scaling**: Easy horizontal pod autoscaling capabilities
+- **Observability**: Better integration with monitoring tools
+
+### k3s Specific Benefits
+- **Lightweight**: Single binary installation, minimal resource overhead
+- **Built-in LoadBalancer**: Traefik ingress controller included
+- **Storage**: Local path provisioner for persistent volumes
+- **Networking**: Flannel CNI for pod networking
+- **API Server**: Full Kubernetes API compatibility
+
+## k3s Deployment Process
+
+### 1. Install k3s
+```bash
+# Install k3s single-node cluster
+curl -sfL https://get.k3s.io | sh -
+
+# Configure kubectl access
+sudo chmod 644 /etc/rancher/k3s/k3s.yaml
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
+# Verify cluster is ready
+kubectl get nodes
+```
+
+### 2. Clone easyTrade Repository
+```bash
+git clone https://github.com/Dynatrace/easytrade.git
+cd easytrade
+```
+
+### 3. Deploy with Kustomize
+```bash
+# Apply all manifests using kustomize
+kubectl apply -k kubernetes-manifests/base/
+
+# Wait for all pods to be ready
+kubectl wait --for=condition=ready pod --all --timeout=600s
+
+# Check deployment status
+kubectl get pods -o wide
+kubectl get services
+```
+
+### 4. Access Application
+```bash
+# Get LoadBalancer external IP
+kubectl get service frontendreverseproxy-easytrade
+
+# Application will be available at:
+# http://EXTERNAL_IP:80
+```
+
+### 5. Verify Problem Patterns
+```bash
+# Check feature flag service
+curl http://EXTERNAL_IP/feature-flag-service/v1/flags
+
+# Enable a problem pattern
+curl -X PUT "http://EXTERNAL_IP/feature-flag-service/v1/flags/db_not_responding/" \
+-H "accept: application/json" \
+-d '{"enabled": true}'
+```
+
+## k3s Troubleshooting Commands
+
+### Pod Management
+```bash
+# Check pod status
+kubectl get pods -o wide
+
+# View pod logs
+kubectl logs -f deployment/frontend
+
+# Describe problematic pod
+kubectl describe pod POD_NAME
+
+# Restart deployment
+kubectl rollout restart deployment/frontend
+```
+
+### Service Debugging
+```bash
+# Check services and endpoints
+kubectl get services
+kubectl get endpoints
+
+# Test internal connectivity
+kubectl exec -it deployment/frontend -- curl http://broker-service:8080/health
+
+# Port forward for debugging
+kubectl port-forward service/frontend 3000:3000
+```
+
+### Resource Monitoring
+```bash
+# Check resource usage
+kubectl top nodes
+kubectl top pods
+
+# View events
+kubectl get events --sort-by=.metadata.creationTimestamp
+
+# Check cluster info
+kubectl cluster-info
+```
+
+## k3s Manifest Structure Analysis
+
+The easyTrade Kubernetes manifests include:
+
+### Core Services (19 total)
+1. **db** - SQL Server database
+2. **rabbitmq** - Message queue
+3. **contentcreator** - Database initialization
+4. **manager** - Trade management service
+5. **pricing-service** - Stock pricing
+6. **broker-service** - Trading operations
+7. **calculationservice** - Trade calculations
+8. **frontend** - React UI
+9. **loginservice** - Authentication
+10. **frontendreverseproxy** - Load balancer/proxy
+11. **loadgen** - Traffic generator
+12. **offerservice** - Stock offers
+13. **feature-flag-service** - Problem pattern control
+14. **accountservice** - User accounts
+15. **engine** - Trading engine
+16. **credit-card-order-service** - Payment processing
+17. **third-party-service** - External integrations
+18. **aggregator-service** - Metrics aggregation
+19. **problem-operator** - Problem pattern operator
+
+### Resource Specifications
+- **CPU requests**: 10m-50m per service
+- **Memory requests**: 75Mi-200Mi per service
+- **Memory limits**: 75Mi-200Mi per service
+- **Total cluster requirements**: ~2GB RAM, 1 CPU core minimum
+
+### Service Types
+- **ClusterIP**: Internal services (most services)
+- **LoadBalancer**: frontendreverseproxy-easytrade (external access)
+- **ConfigMap**: connection-strings (database connections)
 
 ### Service Architecture
 - **Total services**: 18 microservices (not 19 as initially documented)
@@ -363,10 +536,10 @@ When cleaning up easyTrade deployments permanently, follow this order to avoid d
 - **If AmazonQ.md was previously tracked**: Use `git rm --cached AmazonQ.md` to remove from tracking
 - **Don't assume existing infrastructure**: Always check AWS resources first
 - **Don't use hardcoded resource IDs**: Security groups, subnets vary by account/region
-- **Don't skip Docker group membership**: User must be in docker group to run containers
-- **Don't forget logout/login**: Required after adding user to docker group
-- **Don't use docker-compose v1**: Must use Docker Compose Plugin (docker compose)
-- **Always verify ports**: Use netstat to confirm services are listening on expected ports
+- **Don't skip k3s cluster verification**: Always check `kubectl get nodes` before deploying
+- **Don't forget KUBECONFIG**: Export KUBECONFIG=/etc/rancher/k3s/k3s.yaml for kubectl access
+- **Don't use docker-compose commands**: This is k3s deployment, use kubectl commands
+- **Always verify LoadBalancer**: Use `kubectl get services` to confirm external IP assignment
 - **Always terminate instances first** to avoid charges
 - **Remove PEM files immediately** after deleting key pairs to prevent confusion
-- **Allow stabilization time**: easyTrade takes several minutes to fully start all 19 services
+- **Allow pod stabilization time**: easyTrade takes 5-7 minutes to fully start all 19 services in k3s

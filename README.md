@@ -1,6 +1,6 @@
-# 🚀 easyTrade on AWS: Your Microservices Trading Empire
+# 🚀 easyTrade on AWS: Your Kubernetes Microservices Trading Empire
 
-Welcome to the ultimate stock trading demo! Deploy 19 interconnected microservices and watch distributed tracing magic happen in real-time. 📈
+Welcome to the ultimate stock trading demo! Deploy 19 interconnected microservices on Kubernetes (k3s) and watch distributed tracing magic happen in real-time. 📈
 
 > **🎯 Current Status**: Check [AmazonQ.md](./AmazonQ.md) for live deployment info!
 
@@ -11,13 +11,15 @@ Imagine a bustling stock exchange with 19 different departments working together
 - 🕸️ **Distributed tracing** across 19 services (yes, nineteen!)
 - 📊 **Business event capture** - see every trade, every click, every decision
 - 💥 **Built-in chaos** - 4 problem patterns to break things beautifully
-- ☁️ **Cloud-native architecture** that would make any DevOps engineer proud
+- ☁️ **Cloud-native architecture** running on Kubernetes (k3s)
+- 🎯 **Production-ready** with proper resource limits and health checks
 
 ## 🎒 What You'll Need
 
 - 🔑 AWS account with EC2 superpowers
 - 🧠 Basic knowledge of AWS EC2 and security groups
-- 🐳 Understanding of Docker and microservices magic
+- ☸️ Understanding of Kubernetes concepts (pods, services, deployments)
+- 🐳 Basic Docker knowledge for container concepts
 
 ## 💪 EC2 Power Requirements
 
@@ -38,6 +40,7 @@ Create or modify your security group to allow inbound traffic on these ports:
 |------|----------|---------|-------------|---------|
 | 22   | TCP      | Your IP | SSH access | 🔑 Essential |
 | 80   | TCP      | 0.0.0.0/0 | Main application | 🌐 Public |
+| 6443 | TCP      | Your IP | k3s API server | ⚙️ Optional |
 
 ## 🚀 Let's Get This Trading Floor Running!
 
@@ -52,25 +55,20 @@ Create or modify your security group to allow inbound traffic on these ports:
 ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP
 ```
 
-### 3. 🐳 Install Docker (The Container Magic)
+### 3. ☸️ Install k3s (The Kubernetes Magic)
 ```bash
-sudo yum update -y
-sudo yum install docker -y
-sudo service docker start
-sudo usermod -a -G docker ec2-user
+# Install k3s single-node cluster
+curl -sfL https://get.k3s.io | sh -
+
+# Configure kubectl access
+sudo chmod 644 /etc/rancher/k3s/k3s.yaml
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
+# Verify cluster is ready
+kubectl get nodes
 ```
 
-### 4. 🔧 Install Docker Compose Plugin (The Orchestrator)
-```bash
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-# Or install via package manager (Ubuntu)
-sudo apt update
-sudo apt install docker-compose-plugin
-```
-
-### 5. 📦 Install Git (Amazon Linux 2 only)
+### 4. 📦 Install Git (Amazon Linux 2 only)
 ```bash
 sudo yum install git -y
 ```
@@ -101,47 +99,21 @@ ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP
 ```bash
 git clone https://github.com/Dynatrace/easytrade.git
 cd easytrade
-docker compose up -d
+
+# Deploy using Kubernetes manifests
+kubectl apply -k kubernetes-manifests/base/
+
+# Wait for all pods to be ready (this takes 5-7 minutes)
+kubectl wait --for=condition=ready pod --all --timeout=600s
 ```
 
-### 9. 🔄 Setup Autostart (Because Nobody Likes Manual Restarts)
-
-Configure easyTrade to start automatically after reboot:
-
+### 9. ✅ Verify Your Trading Empire is Live
 ```bash
-# Create systemd service file
-sudo tee /etc/systemd/system/easytrade-autostart.service > /dev/null <<EOF
-[Unit]
-Description=easyTrade Docker Compose Application
-Requires=docker.service
-After=docker.service
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-WorkingDirectory=/home/ec2-user/easytrade
-ExecStart=/usr/local/bin/docker-compose up -d
-ExecStop=/usr/local/bin/docker-compose down
-TimeoutStartSec=0
-User=ec2-user
-Group=docker
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Enable and start the service
-sudo systemctl daemon-reload
-sudo systemctl enable easytrade-autostart.service
-sudo systemctl start easytrade-autostart.service
+kubectl get pods -o wide
+kubectl get services
 ```
 
-### 10. ✅ Verify Your Trading Empire is Live
-```bash
-docker compose ps
-```
-
-All 19 services should show "Up" status. This takes approximately **3-5 minutes** (faster than initially estimated). ⚡
+All 19 pods should show "Running" status. This takes approximately **5-7 minutes** for full stabilization. ⚡
 
 ## 🎉 Access Your Trading Empire
 
@@ -216,7 +188,7 @@ curl -X PUT "http://YOUR_EC2_PUBLIC_IP/feature-flag-service/v1/flags/{PATTERN_ID
 ### Check Status:
 ```bash
 # All containers
-ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP "cd easytrade && docker compose ps"
+kubectl get pods -o wide
 
 # Feature flags
 curl http://YOUR_EC2_PUBLIC_IP/feature-flag-service/v1/flags
@@ -255,28 +227,27 @@ Or use the frontend interface to manage problem patterns.
 
 ### View logs for all services
 ```bash
-docker compose logs -f
+kubectl logs -f deployment/frontend
 ```
 
 ### View logs for specific service
 ```bash
-docker compose logs -f frontend
+kubectl logs -f deployment/broker-service
 ```
 
 ### Stop application
 ```bash
-docker compose down
+kubectl delete -k kubernetes-manifests/base/
 ```
 
 ### Restart application
 ```bash
-docker compose restart
+kubectl rollout restart deployment/frontend
 ```
 
 ### Update images
 ```bash
-docker compose pull
-docker compose up -d
+kubectl rollout restart deployment --all
 ```
 
 ## Troubleshooting
@@ -288,22 +259,23 @@ curl -I http://localhost:80
 
 ### Check container status
 ```bash
-docker compose ps
+kubectl get pods -o wide
 ```
 
 ### View container logs
 ```bash
-docker compose logs [service_name]
+kubectl logs deployment/SERVICE_NAME
 ```
 
 ### Check resource usage
 ```bash
-docker stats
+kubectl top nodes
+kubectl top pods
 ```
 
 ### Free up disk space
 ```bash
-docker system prune -a
+kubectl delete pods --field-selector=status.phase=Succeeded
 ```
 
 ## Performance Notes
