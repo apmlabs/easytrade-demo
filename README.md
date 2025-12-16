@@ -25,12 +25,12 @@ Imagine a bustling stock exchange with 19 different departments working together
 
 Your trading empire needs proper infrastructure! Here's what works:
 
-- **🏆 Proven Champion**: t3.large (2 vCPU, 8GB RAM) - handles all 19 services like a boss!
-- **⚡ Only upgrade if needed**: t3.xlarge for extra muscle (if you see performance issues)
-- **🖥️ Operating System**: Amazon Linux 2 or Ubuntu (your choice!)
-- **💾 Storage**: 30GB minimum (50GB for comfort zone)
+- **🏆 ESSENTIAL**: m5.xlarge (4 vCPU, 16GB RAM) - REQUIRED for all 19 services!
+- **❌ t3.large FAILS**: Insufficient RAM causes rabbitmq, manager, third-party-service to crash
+- **🖥️ Operating System**: Ubuntu 22.04 (proven best compatibility with k3s)
+- **💾 Storage**: 20GB minimum (prevents DiskPressure pod evictions)
 
-> **💡 Pro Tip**: We've successfully run this on t3.large - it's faster than expected at just 3 minutes startup!
+> **💡 Pro Tip**: m5.xlarge + Ubuntu 22.04 + 20GB disk = PERFECT deployment in 2-3 minutes!
 
 ## 🔐 Security Group: Your Digital Fortress
 
@@ -39,20 +39,21 @@ Create or modify your security group to allow inbound traffic on these ports:
 | Port | Protocol | Source | Description | Status |
 |------|----------|---------|-------------|---------|
 | 22   | TCP      | Your IP | SSH access | 🔑 Essential |
-| 80   | TCP      | 0.0.0.0/0 | Main application | 🌐 Public |
+| 30000-32767 | TCP | 0.0.0.0/0 | NodePort range (k3s LoadBalancer) | 🌐 Public |
 | 6443 | TCP      | Your IP | k3s API server | ⚙️ Optional |
 
 ## 🚀 Let's Get This Trading Floor Running!
 
 ### 1. 🏗️ Launch Your EC2 Trading Hub
-- Choose Amazon Linux 2 AMI (it's reliable!)
-- Select t3.large or larger (trust us on this one)
+- Choose Ubuntu 22.04 AMI (ami-0ea3c35c5c3284d82)
+- Select m5.xlarge (essential for 19 services)
 - Configure security group as above
+- Set storage to 20GB minimum
 - Launch with your key pair
 
 ### 2. 🔌 Connect to Your Instance
 ```bash
-ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP
+ssh -i your-key.pem ubuntu@YOUR_EC2_PUBLIC_IP
 ```
 
 ### 3. ☸️ Install k3s (The Kubernetes Magic)
@@ -68,31 +69,31 @@ export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 kubectl get nodes
 ```
 
-### 4. 📦 Install Git (Amazon Linux 2 only)
+### 4. 📦 Install Git (Ubuntu)
 ```bash
-sudo yum install git -y
+sudo apt update -y
+sudo apt install -y git
 ```
 
-### 6. 👁️ Install Dynatrace OneAgent (The All-Seeing Eye)
+### 6. 👁️ Install Dynatrace Operator (The All-Seeing Eye)
 
-**🚨 Critical**: Install OneAgent BEFORE deploying containers for full monitoring coverage!
+**🚨 Critical**: Install Dynatrace operator BEFORE deploying containers for full monitoring coverage!
 
 ```bash
-# Download OneAgent installer (replace with your credentials)
-wget -O Dynatrace-OneAgent-Linux-x86.sh "https://YOUR_ENVIRONMENT_URL/api/v1/deployment/installer/agent/unix/default/latest?arch=x86" --header="Authorization: Api-Token YOUR_API_TOKEN"
+# Create Dynatrace namespace
+kubectl create namespace dynatrace
 
-# Make executable and install
-chmod +x Dynatrace-OneAgent-Linux-x86.sh
-sudo ./Dynatrace-OneAgent-Linux-x86.sh
+# Install Dynatrace operator
+kubectl apply -f https://github.com/Dynatrace/dynatrace-operator/releases/latest/download/kubernetes.yaml
 
 # Verify installation
-sudo systemctl status oneagent
+kubectl get pods -n dynatrace
 ```
 
 ### 7. 🔄 Logout and Login Again (Trust the Process)
 ```bash
 exit
-ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP
+ssh -i your-key.pem ubuntu@YOUR_EC2_PUBLIC_IP
 ```
 
 ### 8. 🎯 Deploy easyTrade (The Main Event!)
@@ -100,11 +101,14 @@ ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP
 git clone https://github.com/Dynatrace/easytrade.git
 cd easytrade
 
-# Deploy using Kubernetes manifests
-kubectl apply -k kubernetes-manifests/base/
+# Create easytrade namespace
+kubectl create namespace easytrade
+
+# Deploy using RELEASE manifests (NOT base)
+kubectl -n easytrade apply -f ./kubernetes-manifests/release
 
 # Wait for all pods to be ready (this takes 5-7 minutes)
-kubectl wait --for=condition=ready pod --all --timeout=600s
+kubectl -n easytrade wait --for=condition=ready pod --all --timeout=600s
 ```
 
 ### 9. ✅ Verify Your Trading Empire is Live
@@ -117,9 +121,17 @@ All 19 pods should show "Running" status. This takes approximately **5-7 minutes
 
 ## 🎉 Access Your Trading Empire
 
-Once deployed, access the application using your EC2 public IP:
+Once deployed, get the NodePort and access the application:
 
-- **🌟 Main Application**: `http://YOUR_EC2_PUBLIC_IP:80`
+```bash
+# Get the NodePort assigned by k3s
+kubectl -n easytrade get services frontendreverseproxy-easytrade
+
+# Open the NodePort in your security group
+aws ec2 authorize-security-group-ingress --region us-east-2 --group-id YOUR_SG_ID --protocol tcp --port NODEPORT --cidr 0.0.0.0/0
+```
+
+- **🌟 Main Application**: `http://YOUR_EC2_PUBLIC_IP:NODEPORT`
 
 ## 👥 Meet Your Traders (Default Users)
 
@@ -167,7 +179,7 @@ easyTrade consists of 19 microservices:
 
 ### Enable Problem Patterns:
 ```bash
-curl -X PUT "http://YOUR_EC2_PUBLIC_IP/feature-flag-service/v1/flags/{PATTERN_ID}/" \
+curl -X PUT "http://YOUR_EC2_PUBLIC_IP:NODEPORT/feature-flag-service/v1/flags/{PATTERN_ID}/" \
 -H "accept: application/json" \
 -d '{"enabled": true}'
 ```
@@ -191,7 +203,7 @@ curl -X PUT "http://YOUR_EC2_PUBLIC_IP/feature-flag-service/v1/flags/{PATTERN_ID
 kubectl get pods -o wide
 
 # Feature flags
-curl http://YOUR_EC2_PUBLIC_IP/feature-flag-service/v1/flags
+curl http://YOUR_EC2_PUBLIC_IP:NODEPORT/feature-flag-service/v1/flags
 ```
 
 ### Infrastructure Control:
@@ -216,7 +228,7 @@ easyTrade includes 4 built-in problem patterns for demonstration:
 
 Via API:
 ```bash
-curl -X PUT "http://YOUR_EC2_PUBLIC_IP/feature-flag-service/v1/flags/DbNotResponding/" \
+curl -X PUT "http://YOUR_EC2_PUBLIC_IP:NODEPORT/feature-flag-service/v1/flags/DbNotResponding/" \
 -H "accept: application/json" \
 -d '{"enabled": true}'
 ```
@@ -237,7 +249,7 @@ kubectl logs -f deployment/broker-service
 
 ### Stop application
 ```bash
-kubectl delete -k kubernetes-manifests/base/
+kubectl delete -f ./kubernetes-manifests/release
 ```
 
 ### Restart application
@@ -287,7 +299,7 @@ kubectl delete pods --field-selector=status.phase=Succeeded
 
 ## Cost Optimization
 
-- Use **t3.large minimum** for stable operation
+- Use **m5.xlarge minimum** for stable operation
 - **Stop instance** when not in use to save costs
 - Consider **Spot instances** for temporary demos
 - Use **Elastic IP** if you need consistent access
