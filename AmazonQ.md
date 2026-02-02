@@ -1,20 +1,29 @@
-# Amazon Q Context - easyTrade Kubernetes (k3s) Demo Status
+# Amazon Q Context - easyTrade Demo Status
 
 ## Current Deployment Status: STOPPED 🛑
 
-**Last Updated**: December 17, 2025 10:08 UTC
+**Last Updated**: December 4, 2025 12:57 UTC
 
 ## Stopped Infrastructure
-- **EC2 Instance**: i-089164961f177931b (m5.xlarge, us-east-2) - STOPPED
-- **Key Pair**: easytrade-k3s-key (preserved)
-- **Security Group**: sg-0401b2d1841473361 (preserved)
+- **EC2 Instance**: i-0b9a5f06e7c7268dd (t3.large, us-east-2) - STOPPED
+- **Key Pair**: easytrade-key (preserved)
+- **Security Group**: sg-0decf9989aba71016 (preserved)
 
 ## Application Status
 🛑 **easyTrade Demo STOPPED** (all configuration preserved)
 - Instance stopped to save costs
-- All 19 services configuration intact
-- Ready for quick restart (2-3 minutes for full startup)
-- k3s cluster will restore all containers on restart
+- All 18 services configuration intact
+- Ready for quick restart (3-5 minutes for full startup)
+- Autostart service will restore all containers on restart
+
+## Problem Patterns Available
+- **5 patterns available**: db_not_responding, ergo_aggregator_slowdown, factory_crisis, high_cpu_usage, credit_card_meltdown
+- **All currently disabled** - ready for demonstration
+- **Frontend control enabled** via frontend_feature_flag_management flag
+
+## Quick Access
+- **Main Application**: http://3.129.67.81:80
+- **Default Users**: demouser/demopass, specialuser/specialpass, james_norton/pass_james_123
 
 ## Key Context for Conversations
 - **DO NOT create new infrastructure** - existing instance just needs restart
@@ -30,11 +39,19 @@
 ## Restart Commands
 ```bash
 # Start the stopped instance
-aws ec2 start-instances --region us-east-2 --instance-ids i-089164961f177931b
+aws ec2 start-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
 
 # Get new public IP after restart
-aws ec2 describe-instances --region us-east-2 --instance-ids i-089164961f177931b --query "Reservations[].Instances[].[InstanceId,PublicIpAddress,State.Name]" --output table
+aws ec2 describe-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd --query "Reservations[].Instances[].[InstanceId,PublicIpAddress,State.Name]" --output table
 ```
+
+## Key Differences from easyTravel
+- **Scale**: 19 services vs 6-8 services in easyTravel
+- **Database**: SQL Server vs MongoDB in easyTravel
+- **Message Queue**: RabbitMQ for async communication
+- **Frontend**: React-based vs Java-based in easyTravel
+- **Problem Patterns**: 4 specific patterns vs general patterns
+- **Resource Requirements**: Higher memory and CPU needs (8GB RAM minimum)
 
 ## Application Services Architecture
 1. **Frontend Layer**: React frontend + reverse proxy
@@ -46,16 +63,51 @@ aws ec2 describe-instances --region us-east-2 --instance-ids i-089164961f177931b
 7. **Monitoring**: Aggregator services for metrics
 
 ## Problem Patterns Available
-1. **db_not_responding**: Database connectivity issues
-2. **ergo_aggregator_slowdown**: Service performance degradation
-3. **factory_crisis**: Credit card processing failures
-4. **high_cpu_usage**: Resource constraint simulation
-5. **credit_card_meltdown**: Frontend error simulation
+1. **DbNotResponding**: Database connectivity issues
+2. **ErgoAggregatorSlowdown**: Service performance degradation
+3. **FactoryCrisis**: Credit card processing failures
+4. **HighCpuUsage**: Resource constraint simulation
+
+## Docker Requirements
+- **Docker Version**: Minimum v20.10.13 required
+- **Docker Compose**: Must use Plugin version (NOT v1)
+- **Memory**: 8GB RAM minimum for 19 services
+- **Startup Time**: 5-10 minutes for full stabilization
 
 ## Default Application Users
 - `demouser/demopass`
 - `specialuser/specialpass`
 - `james_norton/pass_james_123` (has pre-populated data)
+
+## Learning Objectives
+- [ ] Understand microservices communication patterns
+- [ ] Learn distributed tracing across 19 services
+- [ ] Practice container orchestration at scale
+- [ ] Explore business event capture
+- [ ] Study problem pattern simulation
+- [ ] Gain experience with service mesh concepts
+
+## Key Context for Conversations
+- **NO ACTIVE DEPLOYMENT** - infrastructure needs to be created
+- **Higher resource requirements** than easyTravel due to 19 services
+- **Startup sequence critical** - database and message queue must be ready first
+- **Problem patterns more sophisticated** and business-focused
+- **Built-in load generation** for realistic testing scenarios
+
+## Available Actions
+- Create AWS infrastructure (EC2, security group, key pair)
+- Deploy easyTrade application with 19 microservices
+- Install Dynatrace OneAgent for monitoring
+- Configure autostart service for persistence
+- Test problem patterns and distributed tracing
+- Set up business event capture
+
+## Next Steps
+1. Create deployment scripts adapted for easyTrade
+2. Set up AWS infrastructure
+3. Deploy and configure the application
+4. Test problem patterns
+5. Document lessons learned
 
 ---
 
@@ -68,27 +120,27 @@ aws ec2 describe-instances --region us-east-2 --instance-ids i-089164961f177931b
 **Last Updated**: [TIMESTAMP]
 
 ## Active Infrastructure
-- **EC2 Instance**: [INSTANCE_ID] (m5.xlarge, us-east-2) - RUNNING
+- **EC2 Instance**: [INSTANCE_ID] (t3.large/xlarge, us-east-2)
 - **Public IP**: [PUBLIC_IP]
-- **Key Pair**: easytrade-k3s-key
-- **Security Group**: [SG_ID] (ports 22, NODEPORT)
+- **Key Pair**: easytrade-key
+- **Security Group**: [SG_ID] (ports 22, 80)
 
 ## Application Status
 ✅ **easyTrade Demo FULLY DEPLOYED and RUNNING**
 - All 19 microservices operational
-- Dynatrace operator installed and running
-- k3s cluster healthy with proper resource allocation
-- Application accessible at http://[PUBLIC_IP]:NODEPORT
+- Dynatrace OneAgent installed and monitoring
+- Autostart service configured for persistence
+- Application accessible at http://[PUBLIC_IP]:80
 
 ## Quick Access
-- **Main Application**: http://[PUBLIC_IP]:NODEPORT
+- **Main Application**: http://[PUBLIC_IP]:80
 - **Default Users**: demouser/demopass, specialuser/specialpass, james_norton/pass_james_123
 
 ## Key Context for Conversations
 - **DO NOT create new infrastructure** - demo is already running
-- **Current deployment is production-ready** with monitoring
+- **Current deployment is production-ready** with monitoring and autostart
 - **Instance will auto-restart** all 19 services after reboot
-- **Dynatrace operator properly installed** before containers for full monitoring
+- **OneAgent properly installed** before containers for full monitoring
 
 ## Available Actions
 - Check application status
@@ -105,16 +157,16 @@ aws ec2 describe-instances --region us-east-2 --instance-ids i-089164961f177931b
 **Last Updated**: [TIMESTAMP]
 
 ## Stopped Infrastructure
-- **EC2 Instance**: [INSTANCE_ID] (m5.xlarge, us-east-2) - STOPPED
-- **Key Pair**: easytrade-k3s-key (preserved)
+- **EC2 Instance**: [INSTANCE_ID] (t3.large/xlarge, us-east-2) - STOPPED
+- **Key Pair**: easytrade-key (preserved)
 - **Security Group**: [SG_ID] (preserved)
 
 ## Application Status
 🛑 **easyTrade Demo STOPPED** (all configuration preserved)
 - Instance stopped to save costs
 - All 19 services configuration intact
-- Ready for quick restart (2-3 minutes for full startup)
-- k3s cluster will restore all containers on restart
+- Ready for quick restart (5-10 minutes for full startup)
+- Autostart service will restore all containers on restart
 
 ## Key Context for Conversations
 - **DO NOT create new infrastructure** - existing instance just needs restart
@@ -151,7 +203,7 @@ aws ec2 describe-instances --region us-east-2 --instance-ids [INSTANCE_ID] --que
 - **Infrastructure needed** - no existing deployment
 - **Fresh deployment required** - follow full setup process
 - **No preserved configuration** - start from scratch
-- **19 services need full deployment** - allow 5-7 minutes
+- **19 services need full deployment** - allow 10-15 minutes
 
 ## Available Actions
 - Deploy new easyTrade infrastructure
@@ -160,7 +212,7 @@ aws ec2 describe-instances --region us-east-2 --instance-ids [INSTANCE_ID] --que
 ```
 
 ## Notes
-- easyTrade requires m5.xlarge for 19 microservices (t3.large fails)
+- easyTrade requires more resources than easyTravel due to service count
 - Startup sequence is critical - database and message queue must be ready first
-- Problem patterns are sophisticated and business-focused
+- Problem patterns are more sophisticated and business-focused
 - Application includes built-in load generation for realistic testing
