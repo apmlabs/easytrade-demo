@@ -37,3 +37,4 @@ __pycache__/
 *.pyc
 
 # Dynamic status files
+infra-details.md

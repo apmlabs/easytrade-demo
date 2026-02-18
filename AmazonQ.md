@@ -1,18 +1,20 @@
 # Amazon Q Context - easyTrade Demo Status
 
+> ⚠️ **Infrastructure details** (instance ID, security group, public IP) are stored in `infra-details.md` (gitignored, local only).
+
 ## Current Deployment Status: STOPPED 🛑
 
 **Last Updated**: December 4, 2025 12:57 UTC
 
 ## Stopped Infrastructure
-- **EC2 Instance**: i-0b9a5f06e7c7268dd (t3.large, us-east-2) - STOPPED
+- **EC2 Instance**: see `infra-details.md` (t3.large, us-east-2) - STOPPED
 - **Key Pair**: easytrade-key (preserved)
-- **Security Group**: sg-0decf9989aba71016 (preserved)
+- **Security Group**: see `infra-details.md` (preserved)
 
 ## Application Status
 🛑 **easyTrade Demo STOPPED** (all configuration preserved)
 - Instance stopped to save costs
-- All 18 services configuration intact
+- All 19 services configuration intact
 - Ready for quick restart (3-5 minutes for full startup)
 - Autostart service will restore all containers on restart
 
@@ -22,7 +24,7 @@
 - **Frontend control enabled** via frontend_feature_flag_management flag
 
 ## Quick Access
-- **Main Application**: http://3.129.67.81:80
+- **Main Application**: see `infra-details.md` for current IP
 - **Default Users**: demouser/demopass, specialuser/specialpass, james_norton/pass_james_123
 
 ## Key Context for Conversations
@@ -30,20 +32,12 @@
 - **All configuration preserved** - no redeployment needed
 - **Quick restart available** - just start the existing instance
 - **Public IP will change** after restart (get new IP from AWS)
+- **Instance/SG IDs**: stored in `infra-details.md` (local only, gitignored)
 
 ## Available Actions
 - **Restart existing instance** (fastest option)
 - Check instance status
 - **Terminate completely** (permanent cleanup)
-
-## Restart Commands
-```bash
-# Start the stopped instance
-aws ec2 start-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
-
-# Get new public IP after restart
-aws ec2 describe-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd --query "Reservations[].Instances[].[InstanceId,PublicIpAddress,State.Name]" --output table
-```
 
 ## Key Differences from easyTravel
 - **Scale**: 19 services vs 6-8 services in easyTravel
@@ -68,12 +62,6 @@ aws ec2 describe-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
 3. **FactoryCrisis**: Credit card processing failures
 4. **HighCpuUsage**: Resource constraint simulation
 
-## Docker Requirements
-- **Docker Version**: Minimum v20.10.13 required
-- **Docker Compose**: Must use Plugin version (NOT v1)
-- **Memory**: 8GB RAM minimum for 19 services
-- **Startup Time**: 5-10 minutes for full stabilization
-
 ## Default Application Users
 - `demouser/demopass`
 - `specialuser/specialpass`
@@ -88,7 +76,6 @@ aws ec2 describe-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
 - [ ] Gain experience with service mesh concepts
 
 ## Key Context for Conversations
-- **NO ACTIVE DEPLOYMENT** - infrastructure needs to be created
 - **Higher resource requirements** than easyTravel due to 19 services
 - **Startup sequence critical** - database and message queue must be ready first
 - **Problem patterns more sophisticated** and business-focused
@@ -120,20 +107,20 @@ aws ec2 describe-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
 **Last Updated**: [TIMESTAMP]
 
 ## Active Infrastructure
-- **EC2 Instance**: [INSTANCE_ID] (t3.large/xlarge, us-east-2)
-- **Public IP**: [PUBLIC_IP]
+- **EC2 Instance**: see infra-details.md (us-east-2)
+- **Public IP**: see infra-details.md
 - **Key Pair**: easytrade-key
-- **Security Group**: [SG_ID] (ports 22, 80)
+- **Security Group**: see infra-details.md
 
 ## Application Status
 ✅ **easyTrade Demo FULLY DEPLOYED and RUNNING**
 - All 19 microservices operational
 - Dynatrace OneAgent installed and monitoring
 - Autostart service configured for persistence
-- Application accessible at http://[PUBLIC_IP]:80
+- Application accessible at http://[PUBLIC_IP]:NodePort
 
 ## Quick Access
-- **Main Application**: http://[PUBLIC_IP]:80
+- **Main Application**: see infra-details.md for current IP and port
 - **Default Users**: demouser/demopass, specialuser/specialpass, james_norton/pass_james_123
 
 ## Key Context for Conversations
@@ -157,9 +144,9 @@ aws ec2 describe-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
 **Last Updated**: [TIMESTAMP]
 
 ## Stopped Infrastructure
-- **EC2 Instance**: [INSTANCE_ID] (t3.large/xlarge, us-east-2) - STOPPED
+- **EC2 Instance**: see infra-details.md (us-east-2) - STOPPED
 - **Key Pair**: easytrade-key (preserved)
-- **Security Group**: [SG_ID] (preserved)
+- **Security Group**: see infra-details.md (preserved)
 
 ## Application Status
 🛑 **easyTrade Demo STOPPED** (all configuration preserved)
@@ -173,6 +160,7 @@ aws ec2 describe-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
 - **All configuration preserved** - no redeployment needed
 - **Quick restart available** - just start the existing instance
 - **Public IP will change** after restart (get new IP from AWS)
+- **Instance/SG IDs**: stored in infra-details.md (local only)
 
 ## Available Actions
 - **Restart existing instance** (fastest option)
@@ -181,10 +169,8 @@ aws ec2 describe-instances --region us-east-2 --instance-ids i-0b9a5f06e7c7268dd
 
 ## Restart Commands
 ```bash
-# Start the stopped instance
+# See infra-details.md for INSTANCE_ID
 aws ec2 start-instances --region us-east-2 --instance-ids [INSTANCE_ID]
-
-# Get new public IP after restart
 aws ec2 describe-instances --region us-east-2 --instance-ids [INSTANCE_ID] --query "Reservations[].Instances[].[InstanceId,PublicIpAddress,State.Name]" --output table
 ```
 ```
